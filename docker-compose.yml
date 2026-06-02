@@ -1,0 +1,26 @@
+services:
+  backend:
+    build: .
+    container_name: taskflow-backend
+    command: npm run server
+    ports:
+      - "3101:3001"
+    environment:
+      - PORT=3001
+    volumes:
+      - ./:/app
+      - /app/node_modules
+
+  frontend:
+    build: .
+    container_name: taskflow-frontend
+    command: npm run dev
+    ports:
+      - "3100:3000"
+    environment:
+      - HOST=0.0.0.0
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    depends_on:
+      - backend

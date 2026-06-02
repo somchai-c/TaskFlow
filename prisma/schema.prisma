@@ -46,6 +46,7 @@ model ProjectMember {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([projectId, userId])
+  @@index([userId])
 }
 
 model Task {
@@ -64,6 +65,9 @@ model Task {
   assignee    User?        @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
   comments    Comment[]
   tags        TaskTag[]
+
+  @@index([projectId])
+  @@index([assigneeId])
 }
 
 model Tag {
@@ -91,4 +95,7 @@ model Comment {
 
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([userId])
 }
