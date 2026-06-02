@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import { useTaskFlow } from '../context/TaskFlowContext';
 import { Task } from '../types';
 import { Avatar } from '../components/Avatar';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { 
   Plus, 
   Folder, 
@@ -29,6 +30,23 @@ interface OutletContextType {
 export const DashboardScreen: React.FC = () => {
   const { tasks, projects, users, currentUser, getProjectProgress } = useTaskFlow();
   const { onOpenCreateTask, onOpenTaskDetails } = useOutletContext<OutletContextType>();
+
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
+
+  const filteredTasksForChart = selectedProjectId === 'all'
+    ? tasks
+    : tasks.filter(t => t.projectId === selectedProjectId);
+
+  const statusStats = [
+    { name: 'Backlog', value: filteredTasksForChart.filter(t => t.status === 'Backlog').length, color: '#64748b', bg: 'bg-slate-500' },
+    { name: 'To Do', value: filteredTasksForChart.filter(t => t.status === 'To Do').length, color: '#3b82f6', bg: 'bg-blue-500' },
+    { name: 'In Progress', value: filteredTasksForChart.filter(t => t.status === 'In Progress').length, color: '#6366f1', bg: 'bg-indigo-500' },
+    { name: 'Review', value: filteredTasksForChart.filter(t => t.status === 'Review').length, color: '#a855f7', bg: 'bg-purple-500' },
+    { name: 'Done', value: filteredTasksForChart.filter(t => t.status === 'Done').length, color: '#10b981', bg: 'bg-emerald-500' },
+  ];
+
+  const chartData = statusStats.filter(item => item.value > 0);
+  const totalFilteredTasks = filteredTasksForChart.length;
 
   // Derived statistics helper variables
   const totalTasks = tasks.length;
@@ -290,6 +308,104 @@ export const DashboardScreen: React.FC = () => {
 
         {/* Right Side: Visual Project health cards (1/3 width) */}
         <div className="space-y-6">
+          {/* Status Distribution Pie Chart */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 md:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-2 border-b border-slate-150 dark:border-slate-800/60">
+              <span className="font-display font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-indigo-500" />
+                <span>Task Distribution</span>
+              </span>
+              
+              {/* Project Selection Dropdown */}
+              <select
+                value={selectedProjectId}
+                onChange={(e) => setSelectedProjectId(e.target.value)}
+                className="text-xs bg-slate-50 dark:bg-slate-800 border border-slate-250 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg p-1 px-2 focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium cursor-pointer"
+                aria-label="Select Project Context"
+              >
+                <option value="all">All Projects</option>
+                {projects.map(proj => (
+                  <option key={proj.id} value={proj.id}>{proj.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {chartData.length === 0 ? (
+              <div className="h-44 flex flex-col items-center justify-center text-center p-4">
+                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-2">
+                  <CheckCircle className="w-5 h-5 stroke-1" />
+                </div>
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">No active tasks in this context</p>
+                <p className="text-[10px] text-slate-450 dark:text-slate-500 mt-1">Add tasks to see status distribution</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="h-40 relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={65}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1e293b', 
+                          border: 'none', 
+                          borderRadius: '8px',
+                          color: '#f8fafc',
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '11px',
+                          padding: '6px 10px',
+                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                        }}
+                        itemStyle={{ color: '#f8fafc' }}
+                        cursor={{ fill: 'none' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  
+                  {/* Absolute Center Total Counter */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-xl font-display font-black text-slate-800 dark:text-slate-100 leading-none">
+                      {totalFilteredTasks}
+                    </span>
+                    <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
+                      tasks
+                    </span>
+                  </div>
+                </div>
+
+                {/* Status List Counts Breakdown */}
+                <div className="grid grid-cols-2 gap-2 text-[10px] font-semibold text-slate-600 dark:text-slate-450 border-t border-slate-150 dark:border-slate-850 pt-3">
+                  {statusStats.map(status => {
+                    const percentage = totalFilteredTasks > 0 ? Math.round((status.value / totalFilteredTasks) * 100) : 0;
+                    return (
+                      <div key={status.name} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-55/60 dark:bg-slate-800/20">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className={`w-1.5 h-1.5 rounded-full ${status.bg} flex-shrink-0`} />
+                          <span className="truncate">{status.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1 font-bold text-slate-800 dark:text-slate-200">
+                          <span>{status.value}</span>
+                          <span className="text-[8px] text-slate-400 dark:text-slate-500 font-normal">({percentage}%)</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 md:p-5">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-200">
               <span className="font-display font-bold text-sm text-slate-900">
