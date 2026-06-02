@@ -1,0 +1,6 @@
+{
+  "name": "TaskFlow",
+  "description": "A modern team task management workspace with personal and team Kanban boards, task lists, visual statistics, and responsive team collaboration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
