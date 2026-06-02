@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { useTaskFlow } from '../context/TaskFlowContext';
 import { Task, TaskPriority, TaskStatus } from '../types';
 import { Avatar } from '../components/Avatar';
@@ -37,6 +38,7 @@ export const KanbanBoardScreen: React.FC = () => {
   const [priorityFilter, setPriorityFilter] = useState('');
 
   const [hoverColumn, setHoverColumn] = useState<string | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
   // --- Filtering tasks logic from Flow 4 ---
   const filteredTasks = tasks.filter(t => {
@@ -61,6 +63,7 @@ export const KanbanBoardScreen: React.FC = () => {
   // HTML5 Drag and Drop handlers
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData('text/plain', taskId);
+    setActiveDragId(taskId);
   };
 
   const handleDragOver = (e: React.DragEvent, colStatus: string) => {
@@ -71,6 +74,7 @@ export const KanbanBoardScreen: React.FC = () => {
   const handleDrop = (e: React.DragEvent, targetStatus: TaskStatus) => {
     e.preventDefault();
     setHoverColumn(null);
+    setActiveDragId(null);
     const taskId = e.dataTransfer.getData('text/plain');
     if (taskId) {
       moveTask(taskId, targetStatus);
@@ -253,69 +257,97 @@ export const KanbanBoardScreen: React.FC = () => {
 
               {/* Lane Cards Stream */}
               <div className="flex-1 overflow-y-auto pt-3 space-y-2.5 pr-0.5">
-                {colTasks.length > 0 ? (
-                  colTasks.map(task => {
-                    const assign = users.find(u => u.id === task.assigneeId);
-                    const proj = projects.find(p => p.id === task.projectId);
-                    const commCount = getCommentsCountForTask(task.id);
+                <AnimatePresence mode="popLayout">
+                  {colTasks.length > 0 ? (
+                    colTasks.map(task => {
+                      const assign = users.find(u => u.id === task.assigneeId);
+                      const proj = projects.find(p => p.id === task.projectId);
+                      const commCount = getCommentsCountForTask(task.id);
+                      const isDraggingThis = activeDragId === task.id;
 
-                    return (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, task.id)}
-                        onClick={() => onOpenTaskDetails(task)}
-                        className={`bg-white border hover:scale-[1.01] rounded-xl p-3.5 shadow-sm transition-all duration-150 select-none cursor-grab active:cursor-grabbing space-y-2.5 group relative overflow-hidden
-                          ${task.priority === 'High' 
-                            ? 'border-blue-200 pl-4.5' 
-                            : 'border-slate-200 hover:border-blue-300'}`}
-                      >
-                        {task.priority === 'High' && (
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600"></div>
-                        )}
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between gap-1 select-none">
-                            <span className="text-[8px] font-extrabold uppercase font-mono tracking-widest text-slate-400 block truncate max-w-[110px]">{proj?.name}</span>
-                            <span className={`text-[8px] font-extrabold uppercase font-mono tracking-wider border px-1.5 py-0.5 rounded-full ${priorityColors[task.priority]}`}>
-                              {task.priority}
-                            </span>
-                          </div>
-                          
-                          <h4 className="font-semibold text-xs text-slate-800 line-clamp-2 leading-snug group-hover:text-blue-600 pt-0.5">
-                            {task.title}
-                          </h4>
-                        </div>
-
-                        {/* Card metadata (Comment Count, Dates, Assigned initials) */}
-                        <div className="border-t border-slate-100 pt-2.5 flex items-center justify-between text-[9px] text-slate-400 font-medium">
-                          {/* Left metadata */}
-                          <div className="flex items-center gap-2">
-                            {/* Comments Count bubble */}
-                            <span className="flex items-center gap-0.5 text-[9px] hover:text-slate-650" title={`${commCount} comments posted`}>
-                              <MessageSquare className="w-3.5 h-3.5 text-slate-400 animate-pulse-subtle" />
-                              <span>{commCount}</span>
-                            </span>
+                      return (
+                        <motion.div
+                          key={task.id}
+                          layout
+                          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                          animate={{ 
+                            opacity: isDraggingThis ? 0.35 : 1, 
+                            scale: isDraggingThis ? 0.96 : 1,
+                            y: 0 
+                          }}
+                          exit={{ opacity: 0, scale: 0.95, y: -15 }}
+                          transition={{ 
+                            type: 'spring', 
+                            stiffness: 300, 
+                            damping: 30, 
+                            layout: { duration: 0.2, type: 'spring', stiffness: 220, damping: 25 }
+                          }}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, task.id)}
+                          onDragEnd={() => setActiveDragId(null)}
+                          onClick={() => onOpenTaskDetails(task)}
+                          className={`bg-white dark:bg-slate-900 border rounded-xl p-3.5 shadow-sm select-none space-y-2.5 group relative overflow-hidden transition-colors duration-150
+                            ${isDraggingThis 
+                              ? 'border-dashed border-blue-500 dark:border-blue-700 bg-blue-50/15 dark:bg-blue-950/20 shadow-none pointer-events-none select-none' 
+                              : 'cursor-grab active:cursor-grabbing'}
+                            ${!isDraggingThis && task.priority === 'High' 
+                              ? 'border-blue-200 dark:border-blue-800/80 pl-4.5 font-sans' 
+                              : !isDraggingThis ? 'border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-800' : ''}`}
+                        >
+                          {task.priority === 'High' && (
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600"></div>
+                          )}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between gap-1 select-none">
+                              <span className="text-[8px] font-extrabold uppercase font-mono tracking-widest text-slate-400 block truncate max-w-[110px]">{proj?.name}</span>
+                              <span className={`text-[8px] font-extrabold uppercase font-mono tracking-wider border px-1.5 py-0.5 rounded-full ${priorityColors[task.priority]}`}>
+                                {task.priority}
+                              </span>
+                            </div>
                             
-                            {/* Calendar icon */}
-                            <span className="flex items-center gap-0.5 transform leading-3">
-                              <Calendar className="w-3 h-3" />
-                              <span>{new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                            </span>
+                            <h4 className="font-semibold text-xs text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 pt-0.5">
+                              {task.title}
+                            </h4>
                           </div>
 
-                          {/* Right Avatar */}
-                          <Avatar user={assign} size="xs" showTooltip={true} />
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="h-full border border-dashed border-slate-200/80 rounded-2xl flex items-center justify-center p-6 text-center select-none bg-slate-50/5">
-                    <span className="text-[10px] text-slate-400 font-mono leading-relaxed">
-                      Lanes empty.
-                    </span>
-                  </div>
-                )}
+                          {/* Card metadata (Comment Count, Dates, Assigned initials) */}
+                          <div className="border-t border-slate-100 dark:border-slate-800/60 pt-2.5 flex items-center justify-between text-[9px] text-slate-400 dark:text-slate-500 font-medium">
+                            {/* Left metadata */}
+                            <div className="flex items-center gap-2">
+                              {/* Comments Count bubble */}
+                              <span className="flex items-center gap-0.5 text-[9px] hover:text-slate-650 dark:hover:text-slate-300" title={`${commCount} comments posted`}>
+                                <MessageSquare className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 animate-pulse-subtle" />
+                                <span>{commCount}</span>
+                              </span>
+                              
+                              {/* Calendar icon */}
+                              <span className="flex items-center gap-0.5 transform leading-3">
+                                <Calendar className="w-3 h-3" />
+                                <span>{new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                              </span>
+                            </div>
+
+                            {/* Right Avatar */}
+                            <Avatar user={assign} size="xs" showTooltip={true} />
+                          </div>
+                        </motion.div>
+                      );
+                    })
+                  ) : (
+                    <motion.div 
+                      key="empty"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="h-full border border-dashed border-slate-200/80 dark:border-slate-800 rounded-2xl flex items-center justify-center p-6 text-center select-none bg-slate-50/5 dark:bg-slate-900/5"
+                    >
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono leading-relaxed">
+                        Lanes empty.
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           );

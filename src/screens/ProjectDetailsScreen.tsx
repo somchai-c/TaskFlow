@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useOutletContext, Navigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { useTaskFlow } from '../context/TaskFlowContext';
 import { Task, TaskPriority, TaskStatus } from '../types';
 import { Avatar } from '../components/Avatar';
@@ -33,6 +34,7 @@ export const ProjectDetailsScreen: React.FC = () => {
 
   // Switch between Kanban Board vs Task List within the project
   const [activeView, setActiveView] = useState<'board' | 'list'>('board');
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
   const project = projects.find(p => p.id === id);
 
@@ -53,6 +55,7 @@ export const ProjectDetailsScreen: React.FC = () => {
   // Drag and drop parameters for local columns
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData('text/plain', taskId);
+    setActiveDragId(taskId);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -61,6 +64,7 @@ export const ProjectDetailsScreen: React.FC = () => {
 
   const handleDrop = (e: React.DragEvent, targetStatus: TaskStatus) => {
     e.preventDefault();
+    setActiveDragId(null);
     const taskId = e.dataTransfer.getData('text/plain');
     if (taskId) {
       moveTask(taskId, targetStatus);
@@ -196,46 +200,74 @@ export const ProjectDetailsScreen: React.FC = () => {
 
                 {/* Subtask list */}
                 <div className="flex-1 overflow-y-auto pt-3 space-y-2.5 pr-0.5">
-                  {colTasks.length > 0 ? (
-                    colTasks.map(task => {
-                      const asign = users.find(u => u.id === task.assigneeId);
-                      return (
-                        <div
-                          key={task.id}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, task.id)}
-                          onClick={() => onOpenTaskDetails(task)}
-                          className={`bg-white border hover:scale-[1.01] rounded-xl p-3.5 shadow-sm transition-all duration-150 select-none cursor-grab active:cursor-grabbing space-y-2.5 group relative overflow-hidden
-                            ${task.priority === 'High' 
-                              ? 'border-blue-200 pl-4.5' 
-                              : 'border-slate-200 hover:border-blue-300'}`}
-                        >
-                          {task.priority === 'High' && (
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600"></div>
-                          )}
-                          <div className="space-y-1">
-                            <span className={`text-[8px] font-extrabold uppercase font-mono tracking-widest border px-1.5 py-0.5 rounded-full ${priorityColors[task.priority]}`}>
-                              {task.priority}
-                            </span>
-                            <h4 className="font-semibold text-xs text-slate-800 line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors pt-1">
-                              {task.title}
-                            </h4>
-                          </div>
+                  <AnimatePresence mode="popLayout">
+                    {colTasks.length > 0 ? (
+                      colTasks.map(task => {
+                        const asign = users.find(u => u.id === task.assigneeId);
+                        const isDraggingThis = activeDragId === task.id;
+                        return (
+                          <motion.div
+                            key={task.id}
+                            layout
+                            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                            animate={{ 
+                              opacity: isDraggingThis ? 0.35 : 1, 
+                              scale: isDraggingThis ? 0.96 : 1,
+                              y: 0 
+                            }}
+                            exit={{ opacity: 0, scale: 0.95, y: -15 }}
+                            transition={{ 
+                              type: 'spring', 
+                              stiffness: 300, 
+                              damping: 30, 
+                              layout: { duration: 0.2, type: 'spring', stiffness: 220, damping: 25 }
+                            }}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, task.id)}
+                            onDragEnd={() => setActiveDragId(null)}
+                            onClick={() => onOpenTaskDetails(task)}
+                            className={`bg-white dark:bg-slate-900 border rounded-xl p-3.5 shadow-sm select-none space-y-2.5 group relative overflow-hidden transition-colors duration-150
+                              ${isDraggingThis 
+                                ? 'border-dashed border-blue-500 dark:border-blue-700 bg-blue-50/15 dark:bg-blue-950/20 shadow-none pointer-events-none select-none' 
+                                : 'cursor-grab active:cursor-grabbing hover:scale-[1.01]'}
+                              ${!isDraggingThis && task.priority === 'High' 
+                                ? 'border-blue-200 dark:border-blue-800/80 pl-4.5 font-sans' 
+                                : !isDraggingThis ? 'border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-800' : ''}`}
+                          >
+                            {task.priority === 'High' && (
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600"></div>
+                            )}
+                            <div className="space-y-1">
+                              <span className={`text-[8px] font-extrabold uppercase font-mono tracking-widest border px-1.5 py-0.5 rounded-full ${priorityColors[task.priority]}`}>
+                                {task.priority}
+                              </span>
+                              <h4 className="font-semibold text-xs text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors pt-1">
+                                {task.title}
+                              </h4>
+                            </div>
 
-                          <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[9px] text-slate-400">
-                            <span className="font-mono font-medium">Due {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                            <Avatar user={asign} size="xs" showTooltip={true} />
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="h-full border border-dashed border-slate-200 rounded-xl flex items-center justify-center p-4">
-                      <span className="text-[10px] text-slate-400 text-center font-mono leading-relaxed">
-                        Drop Tasks Here
-                      </span>
-                    </div>
-                  )}
+                            <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2 text-[9px] text-slate-400 dark:text-slate-500">
+                              <span className="font-mono font-medium">Due {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                              <Avatar user={asign} size="xs" showTooltip={true} />
+                            </div>
+                          </motion.div>
+                        );
+                      })
+                    ) : (
+                      <motion.div 
+                        key="empty"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="h-full border border-dashed border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center p-4 min-h-[100px] bg-slate-50/5 dark:bg-slate-900/5"
+                      >
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 text-center font-mono leading-relaxed">
+                          Drop Tasks Here
+                        </span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             );
