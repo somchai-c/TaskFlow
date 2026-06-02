@@ -81,7 +81,8 @@ export const MOCK_TASKS: Task[] = [
     assigneeId: 'u3',
     priority: 'High',
     status: 'In Progress',
-    dueDate: '2026-06-15'
+    dueDate: '2026-06-15',
+    tags: ['design', 'UX', 'frontend']
   },
   {
     id: 't2',
@@ -91,7 +92,8 @@ export const MOCK_TASKS: Task[] = [
     assigneeId: 'u2',
     priority: 'Medium',
     status: 'To Do',
-    dueDate: '2026-06-18'
+    dueDate: '2026-06-18',
+    tags: ['frontend', 'auth']
   },
   {
     id: 't3',
@@ -101,7 +103,8 @@ export const MOCK_TASKS: Task[] = [
     assigneeId: 'u1',
     priority: 'Low',
     status: 'Review',
-    dueDate: '2026-06-12'
+    dueDate: '2026-06-12',
+    tags: ['branding', 'marketing']
   },
   {
     id: 't4',
@@ -111,7 +114,8 @@ export const MOCK_TASKS: Task[] = [
     assigneeId: 'u2',
     priority: 'High',
     status: 'Backlog',
-    dueDate: '2026-06-25'
+    dueDate: '2026-06-25',
+    tags: ['telemetry', 'analytics']
   },
   {
     id: 't5',
@@ -121,7 +125,8 @@ export const MOCK_TASKS: Task[] = [
     assigneeId: 'u5',
     priority: 'Low',
     status: 'Done',
-    dueDate: '2026-06-01'
+    dueDate: '2026-06-01',
+    tags: ['marketing', 'copywriting']
   },
   {
     id: 't6',
@@ -131,7 +136,8 @@ export const MOCK_TASKS: Task[] = [
     assigneeId: 'u2',
     priority: 'High',
     status: 'In Progress',
-    dueDate: '2026-06-10'
+    dueDate: '2026-06-10',
+    tags: ['database', 'infra', 'stg']
   },
   {
     id: 't7',

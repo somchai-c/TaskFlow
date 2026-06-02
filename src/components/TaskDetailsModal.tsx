@@ -43,6 +43,19 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
   const [newComment, setNewComment] = useState('');
   const [commentError, setCommentError] = useState('');
+  const [localTagInput, setLocalTagInput] = useState('');
+
+  const handleDetailsAddTag = () => {
+    const trimmed = localTagInput.trim();
+    if (trimmed) {
+      const currentTags = task.tags || [];
+      if (!currentTags.includes(trimmed)) {
+        const updatedTags = [...currentTags, trimmed];
+        updateTask({ ...task, tags: updatedTags });
+      }
+    }
+    setLocalTagInput('');
+  };
 
   const project = projects.find(p => p.id === task.projectId);
   const assignee = users.find(u => u.id === task.assigneeId);
@@ -96,19 +109,19 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
       <div 
-        className="bg-white rounded-2xl border border-slate-100 shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] animate-shake-in duration-200"
+        className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800/85 shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] animate-shake-in duration-200 text-slate-800 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header toolbar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-900/40 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase font-mono tracking-wider font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded">
+            <span className="text-[10px] uppercase font-mono tracking-wider font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded">
               ID: {task.id}
             </span>
             <span className={`text-[10px] uppercase font-mono tracking-wider font-bold px-2 py-0.5 rounded
-              ${task.priority === 'High' ? 'bg-rose-100 text-rose-700' : ''}
-              ${task.priority === 'Medium' ? 'bg-amber-100 text-amber-700' : ''}
-              ${task.priority === 'Low' ? 'bg-blue-100 text-blue-700' : ''}
+              ${task.priority === 'High' ? 'bg-rose-100 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400' : ''}
+              ${task.priority === 'Medium' ? 'bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400' : ''}
+              ${task.priority === 'Low' ? 'bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400' : ''}
             `}>
               {task.priority} Priority
             </span>
@@ -245,7 +258,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
           </div>
 
           {/* Quick Config Sidebar Right Section (1/3 column) */}
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 md:p-5 space-y-4 h-fit text-xs text-slate-700">
+          <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 md:p-5 space-y-4 h-fit text-xs text-slate-700 dark:text-slate-300">
             <span className="font-display font-extrabold text-[10px] text-slate-400 uppercase tracking-widest block border-b border-slate-200 pb-1.5">
               Task Configurations
             </span>
@@ -301,7 +314,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-slate-400 block uppercase">Priority Leverage</span>
               <select
-                className="w-full bg-white border border-slate-200 rounded-lg p-1.5 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
                 value={task.priority}
                 onChange={(e) => handleQuickPriorityChange(e.target.value as TaskPriority)}
                 id="select-quick-priority"
@@ -310,6 +323,66 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 <option value="Medium">Medium Priority</option>
                 <option value="High">High Priority</option>
               </select>
+            </div>
+
+            {/* Custom Tags Section */}
+            <div className="space-y-1.5 border-t border-slate-200/60 dark:border-slate-800/60 pt-3">
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 block uppercase flex items-center gap-1">
+                <Tag className="w-3.5 h-3.5 text-slate-400 dark:text-slate-400" />
+                <span>Labels / Tags</span>
+              </span>
+              
+              {/* Display existing tags as small badges */}
+              {task.tags && task.tags.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {task.tags.map(t => (
+                    <span 
+                      key={t}
+                      className="flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50"
+                    >
+                      <span className="truncate max-w-[80px]">{t}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedTags = (task.tags || []).filter(item => item !== t);
+                          updateTask({ ...task, tags: updatedTags });
+                        }}
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full hover:bg-slate-200/40 dark:hover:bg-slate-700/50 transition-colors"
+                        title={`Remove tag: ${t}`}
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[10px] text-slate-450 dark:text-slate-500 italic pb-0.5">No custom labels applied.</p>
+              )}
+
+              {/* Add tag controls inside details popup */}
+              <div className="flex gap-1.5 mt-2">
+                <input
+                  type="text"
+                  placeholder="New label..."
+                  className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md p-1 px-2 text-[10px] focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium"
+                  value={localTagInput}
+                  onChange={(e) => setLocalTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleDetailsAddTag();
+                    }
+                  }}
+                  id="input-quick-add-tag"
+                />
+                <button
+                  type="button"
+                  onClick={handleDetailsAddTag}
+                  className="px-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-md text-[10px] transition-colors cursor-pointer shrink-0"
+                >
+                  Add
+                </button>
+              </div>
             </div>
           </div>
         </div>

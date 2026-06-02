@@ -36,9 +36,15 @@ export const KanbanBoardScreen: React.FC = () => {
   const [projectFilter, setProjectFilter] = useState('');
   const [assigneeFilter, setAssigneeFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
+  const [tagFilter, setTagFilter] = useState('');
 
   const [hoverColumn, setHoverColumn] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  // Get all unique tags from currently loaded tasks
+  const allAvailableTags = Array.from(
+    new Set(tasks.flatMap(t => t.tags || []))
+  ).filter(Boolean);
 
   // --- Filtering tasks logic from Flow 4 ---
   const filteredTasks = tasks.filter(t => {
@@ -47,8 +53,9 @@ export const KanbanBoardScreen: React.FC = () => {
     const matchesProject = !projectFilter || t.projectId === projectFilter;
     const matchesAssignee = !assigneeFilter || t.assigneeId === assigneeFilter;
     const matchesPriority = !priorityFilter || t.priority === priorityFilter;
+    const matchesTag = !tagFilter || (t.tags && t.tags.includes(tagFilter));
 
-    return matchesQuery && matchesProject && matchesAssignee && matchesPriority;
+    return matchesQuery && matchesProject && matchesAssignee && matchesPriority && matchesTag;
   });
 
   const clearAllFilters = () => {
@@ -56,9 +63,10 @@ export const KanbanBoardScreen: React.FC = () => {
     setProjectFilter('');
     setAssigneeFilter('');
     setPriorityFilter('');
+    setTagFilter('');
   };
 
-  const hasAnyFilters = searchQuery || projectFilter || assigneeFilter || priorityFilter;
+  const hasAnyFilters = searchQuery || projectFilter || assigneeFilter || priorityFilter || tagFilter;
 
   // HTML5 Drag and Drop handlers
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
@@ -115,16 +123,16 @@ export const KanbanBoardScreen: React.FC = () => {
       </div>
 
       {/* 2. Unified Filter panel */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3.5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
           {/* Key Search Filter */}
           <div className="relative">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-450">
-              <Search className="w-4 h-4" />
+              <Search className="w-4 h-4 text-slate-400" />
             </span>
             <input
               type="text"
-              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl py-2 pl-9 pr-4 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/15"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl py-2 pl-9 pr-4 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/15"
               placeholder="Search by keywords..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -134,7 +142,7 @@ export const KanbanBoardScreen: React.FC = () => {
 
           {/* Project select */}
           <select
-            className="bg-slate-50 border border-slate-200 text-slate-700 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/15"
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-705 dark:text-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/15"
             value={projectFilter}
             onChange={(e) => setProjectFilter(e.target.value)}
             id="select-board-project-filter"
@@ -147,7 +155,7 @@ export const KanbanBoardScreen: React.FC = () => {
 
           {/* Assignee select */}
           <select
-            className="bg-slate-50 border border-slate-200 text-slate-700 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/15"
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-705 dark:text-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/15"
             value={assigneeFilter}
             onChange={(e) => setAssigneeFilter(e.target.value)}
             id="select-board-assignee-filter"
@@ -160,7 +168,7 @@ export const KanbanBoardScreen: React.FC = () => {
 
           {/* Priority select */}
           <select
-            className="bg-slate-50 border border-slate-200 text-slate-700 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/15"
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-750 dark:text-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/15"
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value as TaskPriority)}
             id="select-board-priority-filter"
@@ -170,39 +178,62 @@ export const KanbanBoardScreen: React.FC = () => {
             <option value="Medium">Medium</option>
             <option value="High">High</option>
           </select>
+
+          {/* Tag Filter select */}
+          <select
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-750 dark:text-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/15"
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+            id="select-board-tag-filter"
+          >
+            <option value="">All Labels ({allAvailableTags.length})</option>
+            {allAvailableTags.map(tag => (
+              <option key={tag} value={tag}>{tag}</option>
+            ))}
+          </select>
         </div>
 
         {/* Selected filter tags/chips row (PRD Flow 4) */}
         {hasAnyFilters && (
-          <div className="flex items-center justify-between pt-1 border-t border-slate-200 flex-wrap gap-2">
+          <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-800 flex-wrap gap-2">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-1">Active Filter Chips:</span>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Active Filter Chips:</span>
               
               {searchQuery && (
-                <span className="text-[10px] bg-slate-100 text-slate-650 border border-slate-200 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
                   <span>Query: "{searchQuery}"</span>
                   <button onClick={() => setSearchQuery('')} className="p-0.5 hover:text-slate-900"><X className="w-3 h-3" /></button>
                 </span>
               )}
 
               {projectFilter && (
-                <span className="text-[10px] bg-slate-100 text-slate-650 border border-slate-200 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
                   <span>Proj: {projects.find(p => p.id === projectFilter)?.name}</span>
                   <button onClick={() => setProjectFilter('')} className="p-0.5 hover:text-slate-900"><X className="w-3 h-3" /></button>
                 </span>
               )}
 
               {assigneeFilter && (
-                <span className="text-[10px] bg-slate-100 text-slate-650 border border-slate-200 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
                   <span>User: {users.find(u => u.id === assigneeFilter)?.name}</span>
                   <button onClick={() => setAssigneeFilter('')} className="p-0.5 hover:text-slate-900"><X className="w-3 h-3" /></button>
                 </span>
               )}
 
               {priorityFilter && (
-                <span className="text-[10px] bg-slate-100 text-slate-650 border border-slate-200 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
                   <span>Rank: {priorityFilter}</span>
                   <button onClick={() => setPriorityFilter('')} className="p-0.5 hover:text-slate-900"><X className="w-3 h-3" /></button>
+                </span>
+              )}
+
+              {tagFilter && (
+                <span className="text-[10px] bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                  <span className="flex items-center gap-1">
+                    <Tag className="w-3" />
+                    <span>Label: "{tagFilter}"</span>
+                  </span>
+                  <button onClick={() => setTagFilter('')} className="p-0.5 hover:text-blue-900 dark:hover:text-blue-200"><X className="w-3 h-3" /></button>
                 </span>
               )}
             </div>
@@ -309,6 +340,20 @@ export const KanbanBoardScreen: React.FC = () => {
                               {task.title}
                             </h4>
                           </div>
+
+                          {/* Applied Task Tag Badge Stream */}
+                          {task.tags && task.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {task.tags.map(tag => (
+                                <span 
+                                  key={tag} 
+                                  className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-355 border border-slate-200/50 dark:border-slate-800/80"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
 
                           {/* Card metadata (Comment Count, Dates, Assigned initials) */}
                           <div className="border-t border-slate-100 dark:border-slate-800/60 pt-2.5 flex items-center justify-between text-[9px] text-slate-400 dark:text-slate-500 font-medium">

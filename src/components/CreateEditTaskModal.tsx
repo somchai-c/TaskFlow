@@ -29,6 +29,8 @@ export const CreateEditTaskModal: React.FC<CreateEditTaskModalProps> = ({
   const [priority, setPriority] = useState<TaskPriority>('Medium');
   const [status, setStatus] = useState<TaskStatus>('To Do');
   const [dueDate, setDueDate] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   
   const [validationError, setValidationError] = useState('');
 
@@ -42,6 +44,8 @@ export const CreateEditTaskModal: React.FC<CreateEditTaskModalProps> = ({
       setPriority(taskToEdit.priority);
       setStatus(taskToEdit.status);
       setDueDate(taskToEdit.dueDate);
+      setTags(taskToEdit.tags || []);
+      setTagInput('');
     } else {
       // Create defaults
       setTitle('');
@@ -50,6 +54,8 @@ export const CreateEditTaskModal: React.FC<CreateEditTaskModalProps> = ({
       setAssigneeId(users[0]?.id || '');
       setPriority('Medium');
       setStatus('To Do');
+      setTags([]);
+      setTagInput('');
       // Set default due date to 5 days from now
       const defaultDate = new Date();
       defaultDate.setDate(defaultDate.getDate() + 5);
@@ -58,6 +64,25 @@ export const CreateEditTaskModal: React.FC<CreateEditTaskModalProps> = ({
   }, [taskToEdit, projects, users]);
 
   if (!isOpen) return null;
+
+  const handleAddTag = () => {
+    const trimmed = tagInput.trim();
+    if (trimmed && !tags.includes(trimmed)) {
+      setTags([...tags, trimmed]);
+    }
+    setTagInput('');
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter(t => t !== tagToRemove));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +127,8 @@ export const CreateEditTaskModal: React.FC<CreateEditTaskModalProps> = ({
         assigneeId,
         priority,
         status,
-        dueDate
+        dueDate,
+        tags
       });
     } else {
       // Perform New Task Addition
@@ -113,7 +139,8 @@ export const CreateEditTaskModal: React.FC<CreateEditTaskModalProps> = ({
         assigneeId,
         priority,
         status,
-        dueDate
+        dueDate,
+        tags
       );
     }
 
@@ -272,6 +299,53 @@ export const CreateEditTaskModal: React.FC<CreateEditTaskModalProps> = ({
               id="input-task-description"
               maxLength={2000}
             />
+          </div>
+
+          {/* Custom Labels / Tags */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Labels / Tags
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Add user-defined tag (e.g., frontend, bug, api)"
+                className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-lg p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder-slate-400 dark:placeholder-slate-500 font-medium"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleKeyPress}
+                id="input-task-tag"
+              />
+              <button
+                type="button"
+                onClick={handleAddTag}
+                className="px-4.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-lg text-xs transition-colors border border-slate-200 dark:border-slate-700"
+                id="btn-add-tag"
+              >
+                Add Tag
+              </button>
+            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {tags.map(t => (
+                  <span 
+                    key={t} 
+                    className="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50/80 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/60"
+                  >
+                    <span>{t}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(t)}
+                      className="text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 p-0.5 rounded-full hover:bg-blue-100/35 transition-colors"
+                      title={`Remove tag: ${t}`}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="text-[9px] text-slate-400 mt-0.5 font-medium font-sans">Type a label and click Add Tag.</p>
           </div>
 
           {/* Actions Panel */}

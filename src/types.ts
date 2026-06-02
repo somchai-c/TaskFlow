@@ -32,6 +32,7 @@ export interface Task {
   priority: TaskPriority;
   status: TaskStatus;
   dueDate: string; // YYYY-MM-DD
+  tags?: string[];
 }
 
 export interface Comment {

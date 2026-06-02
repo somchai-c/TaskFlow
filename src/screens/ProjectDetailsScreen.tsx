@@ -246,6 +246,20 @@ export const ProjectDetailsScreen: React.FC = () => {
                               </h4>
                             </div>
 
+                            {/* Applied Task Tag Badge Stream */}
+                            {task.tags && task.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {task.tags.map(tag => (
+                                  <span 
+                                    key={tag} 
+                                    className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-355 border border-slate-200/50 dark:border-slate-800/80"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
                             <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2 text-[9px] text-slate-400 dark:text-slate-500">
                               <span className="font-mono font-medium">Due {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                               <Avatar user={asign} size="xs" showTooltip={true} />

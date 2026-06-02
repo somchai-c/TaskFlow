@@ -23,7 +23,7 @@ interface TaskFlowContextType {
   getProjectProgress: (projectId: string) => number;
   
   // Tasks
-  addTask: (title: string, description: string, projectId: string, assigneeId: string, priority: TaskPriority, status: TaskStatus, dueDate: string) => string;
+  addTask: (title: string, description: string, projectId: string, assigneeId: string, priority: TaskPriority, status: TaskStatus, dueDate: string, tags?: string[]) => string;
   updateTask: (updatedTask: Task) => void;
   deleteTask: (taskId: string) => void;
   moveTask: (taskId: string, targetStatus: TaskStatus) => void;
@@ -196,7 +196,8 @@ export const TaskFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     assigneeId: string,
     priority: TaskPriority,
     status: TaskStatus,
-    dueDate: string
+    dueDate: string,
+    tags?: string[]
   ): string => {
     const newId = 't_' + Date.now();
     const newTask: Task = {
@@ -207,7 +208,8 @@ export const TaskFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       assigneeId,
       priority,
       status,
-      dueDate
+      dueDate,
+      tags: tags || []
     };
     setTasks(prev => [...prev, newTask]);
     return newId;
